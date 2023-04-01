@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_switch/flutter_switch.dart';
 import 'package:my_voice_chat_gpt/setting_components/setting_data.dart';
+import 'package:provider/provider.dart';
 
 import '../shared_components/global_variables.dart';
 import '../shared_components/text_with_tooltip.dart';
+import '../shared_components/theme.dart';
 
 class SettingWidget extends StatefulWidget {
   const SettingWidget({super.key, required this.settingData});
@@ -15,19 +17,24 @@ class SettingWidget extends StatefulWidget {
 class _SettingWidgetState extends State<SettingWidget> {
   SettingData get _settingData => widget.settingData;
   var speechLocaleNames = MyGlobalStorage.speechLocaleNames;
-  Widget buildSwitchButton(Function() toggleButtonClicked) {
+
+  void onThemeChanged(bool value, ThemeNotifier themeNotifier) async {
+    (value)
+        ? themeNotifier.setTheme(darkTheme)
+        : themeNotifier.setTheme(lightTheme);
+  }
+
+  Widget buildSwitchButton(
+      BuildContext context, bool val, Function(bool) toggleButtonClicked) {
     return FlutterSwitch(
-      activeColor: Colors.black54,
-      width: 40,
-      height: 20,
-      borderRadius: 25.0,
-      toggleSize: 15,
-      padding: 4.0,
-      value: _settingData.autoTTS,
-      onToggle: (bool value) {
-        setState(toggleButtonClicked);
-      },
-    );
+        activeColor: Theme.of(context).colorScheme.secondary,
+        width: 40,
+        height: 20,
+        borderRadius: 25.0,
+        toggleSize: 15,
+        padding: 4.0,
+        value: val,
+        onToggle: toggleButtonClicked);
   }
 
   late List<DropdownMenuItem<String>> cacheDropdownItems;
@@ -44,6 +51,7 @@ class _SettingWidgetState extends State<SettingWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final themeNotifier = Provider.of<ThemeNotifier>(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text("Settings"),
@@ -59,11 +67,30 @@ class _SettingWidgetState extends State<SettingWidget> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const TextWithTooltip(
+                      text: "Dark theme",
+                      tooltip: "Change app light/dart theme",
+                    ),
+                    buildSwitchButton(context, _settingData.appLightTheme,
+                        (val) {
+                      setState(() {
+                        _settingData.appLightTheme = val;
+                      });
+                      themeNotifier.setTheme(val ? darkTheme : lightTheme);
+                    }),
+                  ],
+                ),
+                const SizedBox(
+                  height: 20,
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const TextWithTooltip(
                       text: "Auto TTS",
                       tooltip: "Auto speak the message for you",
                     ),
-                    buildSwitchButton(
-                        () => _settingData.autoTTS = !_settingData.autoTTS),
+                    buildSwitchButton(context, _settingData.autoTTS,
+                        (val) => _settingData.autoTTS = val),
                   ],
                 ),
                 const SizedBox(
