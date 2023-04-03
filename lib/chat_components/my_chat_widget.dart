@@ -8,6 +8,8 @@ import 'package:uuid/uuid.dart';
 
 import '../file_io.dart';
 import '../setting_components/setting_data.dart';
+import '../shared_components/theme.dart';
+import '../text_to_speech.dart';
 
 class MyChatWidget extends StatefulWidget {
   const MyChatWidget({super.key});
@@ -24,6 +26,7 @@ class _MyChatWidgetState extends State<MyChatWidget>
   final _bot = const chat_type.User(id: '82091008-a484-4a89-ae75-a22bf8d6f3aa');
 
   SettingData get _settingData => SettingData.Instance;
+  final MyTTS _textToSpeech = MyTTS();
 
   final TextEditingController _messageTextEditController =
       TextEditingController();
@@ -79,6 +82,14 @@ class _MyChatWidgetState extends State<MyChatWidget>
       Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (_user.id == message.author.id)
+            IconButton(
+                onPressed: () {
+                  if (message is chat_type.TextMessage) {
+                    _textToSpeech.speak(message.text);
+                  }
+                },
+                icon: const Icon(Icons.play_circle_outline_rounded)),
           Flexible(
             child: Bubble(
               padding: const BubbleEdges.only(top: 0, bottom: 0),
@@ -91,7 +102,11 @@ class _MyChatWidgetState extends State<MyChatWidget>
           ),
           if (_user.id != message.author.id)
             IconButton(
-                onPressed: () {},
+                onPressed: () {
+                  if (message is chat_type.TextMessage) {
+                    _textToSpeech.speak(message.text);
+                  }
+                },
                 icon: const Icon(Icons.play_circle_outline_rounded)),
         ],
       );
@@ -104,10 +119,14 @@ class _MyChatWidgetState extends State<MyChatWidget>
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<SpeechToTextProvider>(
-      builder: (context, provider, child) {
-        _messageTextEditController.text = provider.speechResult;
+    return Consumer2<SpeechToTextProvider, ThemeNotifier>(
+      builder: (context, speechProvider, themeProvider, child) {
+        var themeProvider = Provider.of<ThemeNotifier>(context);
+        _messageTextEditController.text = speechProvider.speechResult;
         return Chat(
+          theme: themeProvider.getMode()
+              ? const DefaultChatTheme()
+              : const DarkChatTheme(),
           bubbleBuilder: _bubbleBuilder,
           messages: _messages,
           onSendPressed: _handleSendPressed,

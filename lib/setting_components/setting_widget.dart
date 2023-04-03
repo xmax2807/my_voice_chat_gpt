@@ -18,11 +18,8 @@ class _SettingWidgetState extends State<SettingWidget> {
   SettingData get _settingData => SettingData.Instance;
   var speechLocaleNames = MyGlobalStorage.speechLocaleNames;
 
-  void onThemeChanged(bool value, ThemeNotifier themeNotifier) async {
-    (value)
-        ? themeNotifier.setTheme(darkTheme)
-        : themeNotifier.setTheme(lightTheme);
-  }
+  void onThemeChanged(bool value, ThemeNotifier themeNotifier) =>
+      themeNotifier.switchTheme(value);
 
   Widget buildSwitchButton(
       BuildContext context, bool val, Function(bool) toggleButtonClicked) {

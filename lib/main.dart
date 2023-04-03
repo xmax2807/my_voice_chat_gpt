@@ -69,47 +69,53 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    SettingData.initialize().whenComplete(() =>
-        Provider.of<ThemeNotifier>(context, listen: false)
-            .switchTheme(_settingData.appLightTheme));
+    SettingData.initialize().whenComplete(() {
+      Provider.of<ThemeNotifier>(context, listen: false)
+          .switchTheme(_settingData.appLightTheme);
+      setState(() {});
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        appBar: AppBar(
-          title: Text(widget.title),
-          actions: [
-            Builder(
-              builder: (context) => IconButton(
-                icon: const Icon(Icons.settings),
-                onPressed: Scaffold.of(context).openEndDrawer,
-              ),
-            ),
-          ],
-        ),
-        body: Center(
-          child: SizedBox(
-            width: window.physicalSize.width,
-            height: window.physicalSize.height,
-            child: ChangeNotifierProvider(
-              create: (context) => SpeechToTextProvider(),
-              child: Column(
-                children: const <Widget>[
-                  Flexible(
-                    child: MyChatWidget(),
+    return !SettingData.isInitialized
+        ? const Scaffold(
+            body: Text("Loading Setting"),
+          )
+        : Scaffold(
+            appBar: AppBar(
+              title: Text(widget.title),
+              actions: [
+                Builder(
+                  builder: (context) => IconButton(
+                    icon: const Icon(Icons.settings),
+                    onPressed: Scaffold.of(context).openEndDrawer,
                   ),
-                  SpeechToTextWidget()
-                ],
+                ),
+              ],
+            ),
+            body: Center(
+              child: SizedBox(
+                width: window.physicalSize.width,
+                height: window.physicalSize.height,
+                child: ChangeNotifierProvider(
+                  create: (context) => SpeechToTextProvider(),
+                  child: Column(
+                    children: const <Widget>[
+                      Flexible(
+                        child: MyChatWidget(),
+                      ),
+                      SpeechToTextWidget()
+                    ],
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
-        endDrawer: SizedBox(
-          width: min(window.physicalSize.width, 400),
-          child: const Drawer(
-            child: SettingWidget(),
-          ),
-        ));
+            endDrawer: SizedBox(
+              width: min(window.physicalSize.width, 400),
+              child: const Drawer(
+                child: SettingWidget(),
+              ),
+            ));
   }
 }

@@ -21,11 +21,14 @@ final lightTheme = ThemeData(
 
 class ThemeNotifier with ChangeNotifier {
   ThemeData? themeData;
-  ThemeNotifier({this.themeData}) {
+  bool? isLightMode;
+  ThemeNotifier({this.themeData, this.isLightMode}) {
     themeData ?? lightTheme;
+    isLightMode ?? true;
   }
 
   getTheme() => themeData;
+  getMode() => isLightMode;
 
   setTheme(ThemeData themeData) {
     this.themeData = themeData;
@@ -33,6 +36,7 @@ class ThemeNotifier with ChangeNotifier {
   }
 
   switchTheme(bool lightMode) {
+    isLightMode = lightMode;
     themeData = lightMode ? lightTheme : darkTheme;
     notifyListeners();
   }

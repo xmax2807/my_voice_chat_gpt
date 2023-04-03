@@ -12,6 +12,7 @@ class SettingData {
     return _instance!;
   }
 
+  static bool get isInitialized => _instance != null;
   static Future initialize() async {
     var json = await readJson<SettingData>("setting.json");
     _instance = json == null ? SettingData._() : SettingData.fromJson(json);

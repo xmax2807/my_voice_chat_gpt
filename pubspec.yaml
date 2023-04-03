@@ -45,6 +45,7 @@ dependencies:
   dropdown_button2: ^2.0.0
   bubble: ^1.2.1
   shared_preferences: ^2.1.0
+  flutter_tts: ^3.6.3
 
 dev_dependencies:
   flutter_test:

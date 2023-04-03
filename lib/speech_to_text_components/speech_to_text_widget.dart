@@ -9,7 +9,6 @@ import 'package:speech_to_text/speech_to_text.dart';
 
 import '../setting_components/setting_data.dart';
 import '../shared_components/global_variables.dart';
-import 'dart:developer' as developer;
 
 class SpeechToTextWidget extends StatefulWidget {
   const SpeechToTextWidget({super.key});
@@ -31,7 +30,7 @@ class _SpeechToTextWidgetState extends State<SpeechToTextWidget> {
   final TextEditingController _pauseForController =
       TextEditingController(text: '3');
   final TextEditingController _listenForController =
-      TextEditingController(text: '5');
+      TextEditingController(text: '30');
 
   Future microPhoneReq() async {
     WidgetsFlutterBinding.ensureInitialized();
@@ -50,7 +49,6 @@ class _SpeechToTextWidgetState extends State<SpeechToTextWidget> {
   Future<void> initSpeechState() async {
     try {
       var hasSpeech = await _speechToText.initialize();
-      developer.log(hasSpeech.toString());
       if (hasSpeech) {
         // Get the list of languages installed on the supporting platform so they
         // can be displayed in the UI for selection by the user.
