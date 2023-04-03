@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_switch/flutter_switch.dart';
 import 'package:my_voice_chat_gpt/setting_components/setting_data.dart';
+import 'package:my_voice_chat_gpt/setting_components/setting_notifier.dart';
 import 'package:provider/provider.dart';
 
 import '../shared_components/global_variables.dart';
@@ -8,14 +9,13 @@ import '../shared_components/text_with_tooltip.dart';
 import '../shared_components/theme.dart';
 
 class SettingWidget extends StatefulWidget {
-  const SettingWidget({super.key, required this.settingData});
-  final SettingData settingData;
+  const SettingWidget({super.key});
   @override
   State<SettingWidget> createState() => _SettingWidgetState();
 }
 
 class _SettingWidgetState extends State<SettingWidget> {
-  SettingData get _settingData => widget.settingData;
+  SettingData get _settingData => SettingData.Instance;
   var speechLocaleNames = MyGlobalStorage.speechLocaleNames;
 
   void onThemeChanged(bool value, ThemeNotifier themeNotifier) async {
@@ -52,6 +52,7 @@ class _SettingWidgetState extends State<SettingWidget> {
   @override
   Widget build(BuildContext context) {
     final themeNotifier = Provider.of<ThemeNotifier>(context);
+    final settingNotifier = Provider.of<SettingNotifier>(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text("Settings"),
@@ -70,10 +71,11 @@ class _SettingWidgetState extends State<SettingWidget> {
                       text: "Dark theme",
                       tooltip: "Change app light/dart theme",
                     ),
-                    buildSwitchButton(context, _settingData.appLightTheme,
+                    buildSwitchButton(context, !_settingData.appLightTheme,
                         (val) {
                       setState(() {
-                        _settingData.appLightTheme = val;
+                        _settingData.appLightTheme = !val;
+                        _settingData.saveSetting();
                       });
                       themeNotifier.setTheme(val ? darkTheme : lightTheme);
                     }),
@@ -89,8 +91,11 @@ class _SettingWidgetState extends State<SettingWidget> {
                       text: "Auto TTS",
                       tooltip: "Auto speak the message for you",
                     ),
-                    buildSwitchButton(context, _settingData.autoTTS,
-                        (val) => _settingData.autoTTS = val),
+                    buildSwitchButton(context, _settingData.autoTTS, (val) {
+                      setState(() {
+                        _settingData.autoTTS = val;
+                      });
+                    }),
                   ],
                 ),
                 const SizedBox(
@@ -122,6 +127,8 @@ class _SettingWidgetState extends State<SettingWidget> {
                                                 element.localeId ==
                                                 selectedVal);
                                   });
+                                  settingNotifier.changeSpeechLanguage(
+                                      _settingData.speechLanguage);
                                 },
                                 value: _settingData.speechLanguage?.localeId,
                                 items: cacheDropdownItems,

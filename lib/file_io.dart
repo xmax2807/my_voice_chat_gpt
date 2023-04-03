@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:developer';
 
 import 'package:path_provider/path_provider.dart';
 
@@ -17,20 +18,22 @@ Future<File> getFile(String fileName) async {
 Future<File> writeJson<T>(T object, String fileName) async {
   final file = await getFile(fileName);
   String json = jsonEncode(object);
+  log(json);
   // Write the file
   return file.writeAsString(json);
 }
 
-Future<T?> readJson<T>(String fileName) async {
+Future<Map<String, dynamic>?> readJson<T>(String fileName) async {
   try {
     final file = await getFile(fileName);
 
     // Read the file
     final contents = await file.readAsString();
-
-    return jsonDecode(contents);
+    log(contents);
+    return jsonDecode(contents) as Map<String, dynamic>;
   } catch (e) {
     // If encountering an error, return 0
+    log(e.toString());
     return null;
   }
 }

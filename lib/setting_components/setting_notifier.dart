@@ -4,19 +4,14 @@ import 'package:my_voice_chat_gpt/setting_components/setting_data.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
 class SettingNotifier with ChangeNotifier {
-  SettingData _settingData;
+  SettingData get _settingData => SettingData.Instance;
 
-  SettingNotifier(this._settingData);
+  SettingNotifier();
   bool get autoTTS => _settingData.autoTTS;
 
-  void changeSetting(SettingData data) {
-    _settingData = data;
-  }
-
-  void changeSpeechLanguage(LocaleName locale) {
+  void changeSpeechLanguage(LocaleName? locale) {
     _settingData.speechLanguage = locale;
     notifyListeners();
+    _settingData.saveSetting();
   }
-
-  SettingData get updatedSetting => _settingData;
 }
