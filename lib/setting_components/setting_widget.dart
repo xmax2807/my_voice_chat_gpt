@@ -34,6 +34,42 @@ class _SettingWidgetState extends State<SettingWidget> {
         onToggle: toggleButtonClicked);
   }
 
+  void _showAlertDialog(BuildContext context) {
+    // set up the buttons
+    Widget cancelButton = TextButton(
+      child: const Text("Cancel"),
+      onPressed: () {
+        Navigator.pop(context);
+      },
+    );
+    Widget continueButton = TextButton(
+      child: const Text("Continue"),
+      onPressed: () {
+        Provider.of<SettingNotifier>(context).deleteMessages();
+      },
+    );
+    // set up the AlertDialog
+    AlertDialog alert = AlertDialog(
+      title: const Text("Caution"),
+      content:
+          const Text("All messages will be deleted, do you want to continue ?"),
+      actions: [
+        cancelButton,
+        continueButton,
+      ],
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(20))),
+    );
+
+    // show the dialog
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return alert;
+      },
+    );
+  }
+
   late List<DropdownMenuItem<String>> cacheDropdownItems;
   @override
   void initState() {
@@ -74,7 +110,7 @@ class _SettingWidgetState extends State<SettingWidget> {
                         _settingData.appLightTheme = !val;
                         _settingData.saveSetting();
                       });
-                      themeNotifier.setTheme(val ? darkTheme : lightTheme);
+                      themeNotifier.switchTheme(!val);
                     }),
                   ],
                 ),
@@ -91,6 +127,7 @@ class _SettingWidgetState extends State<SettingWidget> {
                     buildSwitchButton(context, _settingData.autoTTS, (val) {
                       setState(() {
                         _settingData.autoTTS = val;
+                        _settingData.saveSetting();
                       });
                     }),
                   ],
@@ -135,6 +172,23 @@ class _SettingWidgetState extends State<SettingWidget> {
                     ],
                   ),
                 ),
+                const SizedBox(
+                  height: 100,
+                ),
+                TextButton(
+                    style: TextButton.styleFrom(
+                        minimumSize: const Size.fromHeight(50),
+                        backgroundColor: Colors.red,
+                        foregroundColor:
+                            Theme.of(context).colorScheme.onPrimary,
+                        shape: const RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.all(Radius.circular(20)))),
+                    onPressed: () => _showAlertDialog(context),
+                    child: const Text(
+                      "Delete All Messages",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    )),
               ],
             )),
       ),

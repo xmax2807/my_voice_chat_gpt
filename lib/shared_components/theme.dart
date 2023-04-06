@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:developer' as dev;
 
 final darkTheme = ThemeData(
   primarySwatch: Colors.grey,
@@ -21,14 +22,13 @@ final lightTheme = ThemeData(
 
 class ThemeNotifier with ChangeNotifier {
   ThemeData? themeData;
-  bool? isLightMode;
-  ThemeNotifier({this.themeData, this.isLightMode}) {
+  bool isLightMode;
+  ThemeNotifier({this.themeData, this.isLightMode = true}) {
     themeData ?? lightTheme;
-    isLightMode ?? true;
   }
 
   getTheme() => themeData;
-  getMode() => isLightMode;
+  bool getMode() => isLightMode;
 
   setTheme(ThemeData themeData) {
     this.themeData = themeData;
@@ -37,6 +37,7 @@ class ThemeNotifier with ChangeNotifier {
 
   switchTheme(bool lightMode) {
     isLightMode = lightMode;
+    dev.log(isLightMode.toString());
     themeData = lightMode ? lightTheme : darkTheme;
     notifyListeners();
   }

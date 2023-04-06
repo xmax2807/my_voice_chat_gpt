@@ -14,4 +14,8 @@ class SettingNotifier with ChangeNotifier {
     notifyListeners();
     _settingData.saveSetting();
   }
+
+  void deleteMessages() {
+    notifyListeners();
+  }
 }

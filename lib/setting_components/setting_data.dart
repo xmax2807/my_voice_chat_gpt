@@ -1,6 +1,5 @@
 import 'package:my_voice_chat_gpt/file_io.dart';
 import 'package:speech_to_text/speech_to_text.dart';
-import 'dart:developer';
 
 class SettingData {
   late bool autoTTS;
@@ -27,7 +26,6 @@ class SettingData {
   SettingData.fromJson(Map<String, dynamic> json) {
     autoTTS = json['autoTTS'];
     appLightTheme = json['appLightTheme'];
-    log(json['speechLocaleName']);
     speechLanguage =
         LocaleName(json['speechLocaleId'], json['speechLocaleName']);
   }

@@ -138,7 +138,7 @@ class _SpeechToTextWidgetState extends State<SpeechToTextWidget> {
                   BoxShadow(
                       blurRadius: .26,
                       spreadRadius: level * 1.5,
-                      color: Colors.black.withOpacity(.05))
+                      color: Theme.of(context).primaryColor.withOpacity(.05))
                 ],
                 //color: Colors.amber,
                 borderRadius: const BorderRadius.all(Radius.circular(50)),

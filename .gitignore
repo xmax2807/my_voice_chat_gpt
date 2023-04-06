@@ -74,3 +74,4 @@ analysis_benchmark.json
 # packages file containing multi-root paths
 .packages.generated
 
+.env*

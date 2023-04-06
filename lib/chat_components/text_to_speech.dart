@@ -49,13 +49,36 @@ class MyTTS {
     return await flutterTts.getDefaultVoice;
   }
 
-  Future speak(String text) async {
+  Future _waitWhile(bool Function() test,
+      [Duration pollInterval = Duration.zero]) {
+    var completer = Completer();
+    check() {
+      if (!test()) {
+        completer.complete();
+      } else {
+        Timer(pollInterval, check);
+      }
+    }
+
+    check();
+    return completer.future;
+  }
+
+  Future speak(String text, String? localVoice) async {
+    await _waitWhile(() => !isStopped);
+
+    if (!isWindows) {
+      await flutterTts
+          .setLanguage(localVoice ?? flutterTts.getDefaultVoice as String);
+    }
     await flutterTts.setVolume(volume);
     await flutterTts.setSpeechRate(rate);
     await flutterTts.setPitch(pitch);
 
     if (text.isNotEmpty) {
+      ttsState = TtsState.playing;
       await flutterTts.speak(text);
+      ttsState = TtsState.stopped;
     }
   }
 

@@ -10,6 +10,9 @@ import 'package:my_voice_chat_gpt/shared_components/theme.dart';
 import 'package:my_voice_chat_gpt/speech_to_text_components/speech_to_text_provider.dart';
 import 'package:my_voice_chat_gpt/speech_to_text_components/speech_to_text_widget.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+//import 'dart:developer' as dev;
 
 Future<void> _ensureScreenSize(window) async {
   return window.viewConfiguration.geometry.isEmpty
@@ -21,11 +24,14 @@ Future<void> _ensureScreenSize(window) async {
 void main() async {
   final window = WidgetsFlutterBinding.ensureInitialized().window;
   await _ensureScreenSize(window);
+  await dotenv.load(fileName: ".env");
+
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => ThemeNotifier()),
         ChangeNotifierProvider(create: (context) => SettingNotifier()),
+        ChangeNotifierProvider(create: (context) => SpeechToTextProvider()),
       ],
       child: const MyApp(),
     ),
@@ -98,16 +104,13 @@ class _MyHomePageState extends State<MyHomePage> {
               child: SizedBox(
                 width: window.physicalSize.width,
                 height: window.physicalSize.height,
-                child: ChangeNotifierProvider(
-                  create: (context) => SpeechToTextProvider(),
-                  child: Column(
-                    children: const <Widget>[
-                      Flexible(
-                        child: MyChatWidget(),
-                      ),
-                      SpeechToTextWidget()
-                    ],
-                  ),
+                child: Column(
+                  children: const <Widget>[
+                    Flexible(
+                      child: MyChatWidget(),
+                    ),
+                    SpeechToTextWidget()
+                  ],
                 ),
               ),
             ),
