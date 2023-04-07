@@ -7,5 +7,7 @@ Link Youtube demo: https://youtu.be/6FnIqtjjRlM
 Thầy phải là contributor mới lấy được ạ.
 Em để trong secret variable: Settings -> Security -> Actions secrets and variables -> tab "Variables".
 
-Nếu thầy muốn chạy app thì thầy tạo file .env ở root project giúp em. Format: CHAT_API=<api>
+Nếu thầy muốn chạy app thì thầy tạo file .env ở root project giúp em. 
+    Format: CHAT_API=API
+(API không cần dấu '' hay "" kẹp giữa)
 
