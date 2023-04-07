@@ -13,50 +13,59 @@ class MyChatGPT {
   ///[kChatGptTurboModel]
   ///[kChatGptTurbo0301Model]
   Future<List<String>?> sendRequest(String message) async {
-    _chatMessages.add({"role": "user", "content": message});
-
     final request = ChatCompleteText(
         messages: _chatMessages,
-        maxToken: 200,
-        model: ChatModel.ChatGptTurbo0301Model);
+        maxToken: 3600,
+        model: ChatModel.ChatGptTurboModel);
+    try {
+      final response = await openAI.onChatCompletion(request: request);
 
-    final response = await openAI.onChatCompletion(request: request);
+      if (response == null) return null;
 
-    if (response == null) return null;
-
-    final responses = response.choices.map((e) => e.message.content).toList();
-    for (var element in response.choices) {
-      dev.log("data -> ${element.message.content}");
+      final responses = response.choices.map((e) => e.message.content).toList();
+      return responses;
+    } catch (e) {
+      return null;
     }
-    return responses;
   }
 
   bool _isUser(String id) => id == MyGlobalStorage.user.id;
 
   MyChatGPT._initialize(List<chat_type.Message> messages) {
+    updateMessages(messages);
+    openAI = OpenAI.instance.build(
+        token: dotenv.env[MyGlobalStorage.ChatAPI] ?? '{}',
+        baseOption: HttpSetup(
+            receiveTimeout: const Duration(seconds: 40),
+            connectTimeout: const Duration(seconds: 20)),
+        isLog: true);
+  }
+
+  static Future<MyChatGPT> create(List<chat_type.Message> messages) async {
+    var component = MyChatGPT._initialize(messages);
+    return component;
+  }
+
+  void updateMessages(List<chat_type.Message> messages) {
     _chatMessages = messages
         .map((e) => Map.of({
               "role": _isUser(e.id) ? "user" : "assistant",
               "content": (e is chat_type.TextMessage) ? e.text : ''
             }))
         .toList();
-    openAI = OpenAI.instance.build(
-        token: dotenv.env[MyGlobalStorage.ChatAPI] ?? '{}',
-        baseOption: HttpSetup(
-            receiveTimeout: const Duration(seconds: 20),
-            connectTimeout: const Duration(seconds: 20)),
-        isLog: true);
+
+    dev.log(_chatMessages.length.toString());
   }
 
-  /// Public factory
-  static Future<MyChatGPT> create(List<chat_type.Message> messages) async {
-    // Call the private constructor
-    var component = MyChatGPT._initialize(messages);
+  void clearMessages() {
+    _chatMessages.clear();
+    dev.log(_chatMessages.length.toString());
+  }
 
-    // Do initialization that requires async
-    //await component._complexAsyncInit();
-
-    // Return the fully initialized object
-    return component;
+  void addToHistory(chat_type.TextMessage message) {
+    _chatMessages.add({
+      "role": _isUser(message.author.id) ? "user" : "assistant",
+      "content": message.text
+    });
   }
 }

@@ -1,12 +1,21 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/material.dart';
 
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:my_voice_chat_gpt/setting_components/setting_data.dart';
 
-enum TtsState { playing, stopped, paused, continued }
+enum TtsState { playing, stopped, loading, paused, continued }
 
-class MyTTS {
+class MessageSpeechState {
+  TtsState currentState;
+  String messageId;
+  MessageSpeechState({required this.currentState, required this.messageId});
+}
+
+class MyTTS with ChangeNotifier {
   late FlutterTts flutterTts;
   String? language;
   String? engine;
@@ -27,14 +36,23 @@ class MyTTS {
   bool get isWindows => !kIsWeb && Platform.isWindows;
   bool get isWeb => kIsWeb;
 
+  SettingData get _settingData => SettingData.Instance;
+  late final Queue<MessageSpeechState> queue;
   MyTTS() {
     flutterTts = FlutterTts();
-
+    queue = Queue<MessageSpeechState>();
     _setAwaitOptions();
 
     if (isAndroid) {
       _getDefaultEngine();
       //_getDefaultVoice();
+    }
+  }
+  MessageSpeechState? getSpeechState(String messageId) {
+    try {
+      return queue.firstWhere((element) => element.messageId == messageId);
+    } catch (e) {
+      return null;
     }
   }
 
@@ -64,22 +82,38 @@ class MyTTS {
     return completer.future;
   }
 
-  Future speak(String text, String? localVoice) async {
-    await _waitWhile(() => !isStopped);
+  Future speak(String text, String messageId) async {
+    queue.addLast(MessageSpeechState(
+        currentState: TtsState.stopped, messageId: messageId));
+    notifyListeners();
 
+    final List<Future> readyTasks = [];
+    readyTasks.add(_waitWhile(() => !isStopped));
     if (!isWindows) {
-      await flutterTts
-          .setLanguage(localVoice ?? flutterTts.getDefaultVoice as String);
+      final setLanguageTask = flutterTts.setLanguage(
+          _settingData.speechLanguage?.localeId.replaceAll('_', '-') ??
+              flutterTts.getDefaultVoice as String);
+      readyTasks.add(setLanguageTask);
     }
-    await flutterTts.setVolume(volume);
-    await flutterTts.setSpeechRate(rate);
-    await flutterTts.setPitch(pitch);
+
+    readyTasks.add(flutterTts.setVolume(volume));
+    readyTasks.add(flutterTts.setSpeechRate(rate));
+    readyTasks.add(flutterTts.setPitch(pitch));
+
+    await Future.wait(readyTasks);
+
+    queue.first.currentState = TtsState.playing;
+    notifyListeners();
 
     if (text.isNotEmpty) {
       ttsState = TtsState.playing;
       await flutterTts.speak(text);
       ttsState = TtsState.stopped;
     }
+
+    queue.first.currentState = TtsState.stopped;
+    queue.removeFirst();
+    notifyListeners();
   }
 
   Future _setAwaitOptions() async {

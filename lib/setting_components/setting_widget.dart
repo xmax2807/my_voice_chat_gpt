@@ -4,6 +4,7 @@ import 'package:my_voice_chat_gpt/setting_components/setting_data.dart';
 import 'package:my_voice_chat_gpt/setting_components/setting_notifier.dart';
 import 'package:provider/provider.dart';
 
+import '../shared_components/dialog.dart';
 import '../shared_components/global_variables.dart';
 import '../shared_components/text_with_tooltip.dart';
 import '../shared_components/theme.dart';
@@ -32,42 +33,6 @@ class _SettingWidgetState extends State<SettingWidget> {
         padding: 4.0,
         value: val,
         onToggle: toggleButtonClicked);
-  }
-
-  void _showAlertDialog(BuildContext context) {
-    // set up the buttons
-    Widget cancelButton = TextButton(
-      child: const Text("Cancel"),
-      onPressed: () {
-        Navigator.pop(context);
-      },
-    );
-    Widget continueButton = TextButton(
-      child: const Text("Continue"),
-      onPressed: () {
-        Provider.of<SettingNotifier>(context).deleteMessages();
-      },
-    );
-    // set up the AlertDialog
-    AlertDialog alert = AlertDialog(
-      title: const Text("Caution"),
-      content:
-          const Text("All messages will be deleted, do you want to continue ?"),
-      actions: [
-        cancelButton,
-        continueButton,
-      ],
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(20))),
-    );
-
-    // show the dialog
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return alert;
-      },
-    );
   }
 
   late List<DropdownMenuItem<String>> cacheDropdownItems;
@@ -184,7 +149,15 @@ class _SettingWidgetState extends State<SettingWidget> {
                         shape: const RoundedRectangleBorder(
                             borderRadius:
                                 BorderRadius.all(Radius.circular(20)))),
-                    onPressed: () => _showAlertDialog(context),
+                    onPressed: () => showAlertDialog(
+                          context,
+                          title: "Caution",
+                          description:
+                              "All messages will be deleted, do you want to continue ?",
+                          onConfirm: Provider.of<SettingNotifier>(context,
+                                  listen: false)
+                              .deleteMessages,
+                        ),
                     child: const Text(
                       "Delete All Messages",
                       style: TextStyle(fontWeight: FontWeight.bold),

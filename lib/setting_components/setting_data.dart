@@ -1,4 +1,5 @@
 import 'package:my_voice_chat_gpt/file_io.dart';
+import 'package:my_voice_chat_gpt/shared_components/global_variables.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
 class SettingData {
@@ -38,6 +39,6 @@ class SettingData {
       };
 
   void saveSetting() {
-    writeJson(Instance, 'setting.json');
+    writeJson(Instance, MyGlobalStorage.settingPath);
   }
 }

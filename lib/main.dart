@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:my_voice_chat_gpt/chat_components/my_chat_widget.dart';
+import 'package:my_voice_chat_gpt/chat_components/text_to_speech.dart';
 import 'package:my_voice_chat_gpt/setting_components/setting_notifier.dart';
 import 'package:my_voice_chat_gpt/setting_components/setting_widget.dart';
 import 'package:my_voice_chat_gpt/setting_components/setting_data.dart';
@@ -29,6 +30,7 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (context) => MyTTS()),
         ChangeNotifierProvider(create: (context) => ThemeNotifier()),
         ChangeNotifierProvider(create: (context) => SettingNotifier()),
         ChangeNotifierProvider(create: (context) => SpeechToTextProvider()),

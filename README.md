@@ -1,16 +1,11 @@
 # my_voice_chat_gpt
 
-A new Flutter project.
+Bài tập nhỏ: voice chat với chatgpt.
+Link Youtube demo: https://youtu.be/6FnIqtjjRlM
 
-## Getting Started
+## Cách lấy API của em
+Thầy phải là contributor mới lấy được ạ.
+Em để trong secret variable: Settings -> Security -> Actions secrets and variables -> tab "Variables".
 
-This project is a starting point for a Flutter application.
+Nếu thầy muốn chạy app thì thầy tạo file .env ở root project giúp em. Format: CHAT_API=<api>
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.

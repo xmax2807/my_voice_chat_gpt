@@ -3,13 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as chat_type;
 import 'package:flutter_chat_ui/flutter_chat_ui.dart';
 import 'package:my_voice_chat_gpt/chat_components/chat_gpt.dart';
+import 'package:my_voice_chat_gpt/setting_components/setting_notifier.dart';
 import 'package:my_voice_chat_gpt/shared_components/global_variables.dart';
 import 'package:my_voice_chat_gpt/speech_to_text_components/speech_to_text_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
-import '../file_io.dart';
 import '../setting_components/setting_data.dart';
+import '../shared_components/dialog.dart';
 import '../shared_components/theme.dart';
 import 'text_to_speech.dart';
 
@@ -21,10 +22,8 @@ class MyChatWidget extends StatefulWidget {
 
 class _MyChatWidgetState extends State<MyChatWidget>
     with WidgetsBindingObserver {
-  List<chat_type.Message> _messages = [];
-
   SettingData get _settingData => SettingData.Instance;
-  final MyTTS _textToSpeech = MyTTS();
+  late final MyTTS _textToSpeech;
   late MyChatGPT _chatGPT;
 
   bool _isReady = false;
@@ -32,32 +31,54 @@ class _MyChatWidgetState extends State<MyChatWidget>
   final TextEditingController _messageTextEditController =
       TextEditingController();
 
+  late final SettingNotifier _settingProvider;
+
   @override
   void initState() {
     super.initState();
-    _isReady = false;
-    _loadMessages();
-  }
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      _settingProvider = Provider.of<SettingNotifier>(context, listen: false);
 
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
-    _saveMessages();
+      _textToSpeech = Provider.of<MyTTS>(context, listen: false);
+      _initMessages();
+    });
+    _isReady = false;
   }
 
   void _handleSendPressed(chat_type.PartialText message) async {
-    _createTextMessage(message.text, MyGlobalStorage.user);
+    final chat_type.TextMessage textMessage =
+        await _createTextMessage(message.text, MyGlobalStorage.user);
+    if (mounted) {
+      Provider.of<SpeechToTextProvider>(context).updateText('');
+    }
+    await _sendRequest(textMessage);
+    _settingProvider.saveMessages();
+  }
 
+  Future _sendRequest(chat_type.TextMessage message) async {
     final List<String>? responses = await _chatGPT.sendRequest(message.text);
-    if (responses == null) return;
+    if (responses == null) {
+      if (context.mounted) {
+        showAlertDialog(
+          context,
+          title: 'Error',
+          description:
+              'Request timeout. It seems like the request took longer than 40 sec. Request aborted',
+          onConfirm: () => _sendRequest(message),
+          onDecline: () => _removeMessage(message),
+          confirmText: "Resend Message",
+        );
+      }
+      return;
+    }
 
     for (var response in responses) {
       await _createTextMessage(response, MyGlobalStorage.bot);
     }
-    _saveMessages();
   }
 
-  Future _createTextMessage(String text, chat_type.User author) async {
+  Future<chat_type.TextMessage> _createTextMessage(
+      String text, chat_type.User author) async {
     final textMessage = chat_type.TextMessage(
       author: author,
       createdAt: DateTime.now().millisecondsSinceEpoch,
@@ -65,105 +86,144 @@ class _MyChatWidgetState extends State<MyChatWidget>
       text: text,
     );
 
+    _chatGPT.addToHistory(textMessage);
     _addMessage(textMessage);
+    return textMessage;
+  }
+
+  List<chat_type.Message> _getMessages() {
+    final List<chat_type.Message> messages =
+        Provider.of<SettingNotifier>(context).messages;
+    if (messages.isEmpty) {
+      _chatGPT.clearMessages();
+    }
+    return messages;
   }
 
   void _addMessage(chat_type.Message message) {
     setState(() {
-      _messages.insert(0, message);
+      MyGlobalStorage.messages.insert(0, message);
     });
-    WidgetsBinding.instance.addPostFrameCallback((_) => _shouldSpeak());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _shouldSpeak(message));
   }
 
-  void _loadMessages() async {
-    final messages = await readJsonList(
-      'messages.json',
-      onMapping: (map) => chat_type.Message.fromJson(map),
-    );
-    _messages = messages ?? List.empty(growable: true);
+  void _removeMessage(chat_type.Message message) {
+    int index = 0;
+    for (var element in MyGlobalStorage.messages) {
+      if (element.id == message.id) {
+        break;
+      }
+      index++;
+    }
+    setState(() {
+      MyGlobalStorage.messages.removeAt(index);
+    });
+  }
 
-    _chatGPT = await MyChatGPT.create(_messages);
+  void _initMessages() async {
+    await _settingProvider.loadMessages();
+    _chatGPT = await MyChatGPT.create(MyGlobalStorage.messages);
 
     _isReady = true;
     setState(() {});
   }
 
-  void _saveMessages() {
-    writeJson(_messages, "messages.json");
+  void _shouldSpeak(chat_type.Message lastMessage) {
+    bool shouldSpeak =
+        _settingData.autoTTS && MyGlobalStorage.messages.isNotEmpty;
+    if (!shouldSpeak) return;
+
+    if (lastMessage.author.id == MyGlobalStorage.user.id ||
+        lastMessage is! chat_type.TextMessage) return;
+
+    _textToSpeech.speak(lastMessage.text, lastMessage.id);
   }
 
-  void _shouldSpeak() {
-    if (!_settingData.autoTTS || _messages.isEmpty) return;
-
-    chat_type.Message message = _messages.last;
-
-    if (message.author == MyGlobalStorage.user ||
-        message is! chat_type.TextMessage) return;
-
-    _textToSpeech.speak(message.text,
-        _settingData.speechLanguage?.localeId.replaceAll('_', '-'));
+  Widget _getIconState(TtsState state) {
+    switch (state) {
+      case TtsState.stopped:
+        return const Icon(Icons.play_circle_outline_rounded);
+      case TtsState.playing:
+        return const Icon(Icons.stop_circle_outlined);
+    }
+    return Container(
+      width: 24,
+      height: 24,
+      padding: const EdgeInsets.all(2.0),
+      child: const CircularProgressIndicator(
+        color: Colors.white,
+        strokeWidth: 2,
+      ),
+    );
   }
 
   Widget _bubbleBuilder(
     Widget child, {
-    required message,
+    required chat_type.Message message,
     required nextMessageInGroup,
-  }) =>
-      Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (MyGlobalStorage.user.id == message.author.id)
-            IconButton(
-                onPressed: () {
-                  if (message is chat_type.TextMessage) {
-                    _textToSpeech.speak(
-                        message.text,
-                        _settingData.speechLanguage?.localeId
-                            .replaceAll('_', '-'));
-                  }
-                },
-                icon: const Icon(Icons.play_circle_outline_rounded)),
-          Flexible(
-            child: Bubble(
-              padding: const BubbleEdges.only(top: 0, bottom: 0),
-              radius: const Radius.circular(30),
-              color: MyGlobalStorage.user.id != message.author.id
-                  ? const Color(0xfff5f5f7)
-                  : const Color(0xff6f61e8),
-              child: child,
-            ),
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Flexible(
+          child: Bubble(
+            padding: const BubbleEdges.only(top: 0, bottom: 0),
+            radius: const Radius.circular(30),
+            color: MyGlobalStorage.user.id != message.author.id
+                ? const Color(0xFF646464)
+                : const Color(0xff6f61e8),
+            child: child,
           ),
-          if (MyGlobalStorage.user.id != message.author.id)
-            IconButton(
+        ),
+        if (MyGlobalStorage.user.id != message.author.id)
+          Consumer<MyTTS>(builder: (context, provider, child) {
+            MessageSpeechState? speechState =
+                provider.getSpeechState(message.id);
+
+            TtsState currentState = speechState == null
+                ? TtsState.stopped
+                : speechState.currentState;
+
+            return IconButton(
                 onPressed: () {
                   if (message is chat_type.TextMessage) {
-                    _textToSpeech.speak(
-                        message.text,
-                        _settingData.speechLanguage?.localeId
-                            .replaceAll('_', '-'));
+                    _textToSpeech.speak(message.text, message.id);
                   }
                 },
-                icon: const Icon(Icons.play_circle_outline_rounded)),
-        ],
-      );
+                icon: _getIconState(currentState));
+          }),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return !_isReady
         ? const Text("Initializing Messages")
-        : Consumer2<SpeechToTextProvider, ThemeNotifier>(
-            builder: (context, speechProvider, themeProvider, child) {
-              _messageTextEditController.text = speechProvider.speechResult;
+        : Consumer<ThemeNotifier>(
+            builder: (context, themeProvider, child) {
               return Chat(
                 theme: themeProvider.getMode()
                     ? const DefaultChatTheme()
                     : const DarkChatTheme(),
                 bubbleBuilder: _bubbleBuilder,
-                messages: _messages,
+                messages: _getMessages(),
                 onSendPressed: _handleSendPressed,
                 user: MyGlobalStorage.user,
-                inputOptions: InputOptions(
-                    textEditingController: _messageTextEditController),
+                customBottomWidget: Consumer<SpeechToTextProvider>(
+                  builder: (context, speechProvider, child) {
+                    _messageTextEditController.text =
+                        speechProvider.speechResult;
+                    return Input(
+                      onSendPressed: _handleSendPressed,
+                      options: InputOptions(
+                          textEditingController: _messageTextEditController),
+                    );
+                  },
+                ),
+
+                // inputOptions: InputOptions(
+                //     textEditingController: _messageTextEditController),
               );
             },
           );
